@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: docs/assets/js/calendar.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: docs/assets/js/calendar.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>currDate = new Date(); // Use current month on initial page load
+currDate.setDate(1); // Always set to first day of the month
+const backButton = document.getElementById('back');
+const forwardButton = document.getElementById('forward');
+const iframe = document.getElementById('journal-frame');
+
+// Go back a month
+backButton.addEventListener('click', () => {
+  currDate.setMonth(currDate.getMonth()-1); // Decrement Month
+  updateCalendar(currDate.getMonth() + 1, currDate.getFullYear(), currDate);
+});
+
+// Go forward a month
+forwardButton.addEventListener('click', () => {
+  currDate.setMonth(currDate.getMonth()+1); // Increment Month
+  updateCalendar(currDate.getMonth() + 1, currDate.getFullYear(), currDate);
+});
+
+// On page load listener
+window.addEventListener('DOMContentLoaded', () => {
+  updateCalendar(currDate.getMonth() + 1, currDate.getFullYear(), currDate);
+});
+
+/**
+ * Updates the calendar
+ * @param {*} month the month component of the date
+ * @param {*} year the year component of the date
+ * @param {*} date the date component
+ */
+function updateCalendar(month, year, date) {
+  const currMonth = new Date(year, month - 1);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const calendar = document.getElementById('calendar');
+  let globalItr = 0;
+
+  // Remove old cells
+  const dayCells = document.getElementsByName('calendar-day');
+  const dayCellsLen = dayCells.length;
+
+  for (let i = 0; i &lt; dayCellsLen; i++) {
+    dayCells[0].remove();
+  }
+
+  let monthData;
+
+  do {
+    $.ajax({
+      url: '/read/month/' + date.getFullYear() + '-' + (date.getMonth() + 1),
+      type: 'GET',
+      async: false,
+      success: function(retData) {
+        monthData = retData;
+      },
+      error: function() {
+        console.log('error');
+      },
+    });
+
+    if (monthData === 'error') {
+      const newMonthData = {
+        month: (date.getFullYear() + '-' + (date.getMonth() + 1)),
+        bullets: [],
+      };
+
+      $.ajax({
+        url: '/create/month/',
+        type: 'POST',
+        async: false,
+        contentType: 'application/json',
+        data: JSON.stringify(newMonthData),
+        error: function() {
+          console.log('error');
+        },
+      });
+    }
+  } while (monthData === 'error');
+
+  for (let i = 0; i &lt; currMonth.getDay(); i++) { // Put in empty days for month
+    const cell = document.createElement('div');
+    cell.setAttribute('class', 'grid-item-dates');
+    cell.setAttribute('name', 'calendar-day');
+    calendar.appendChild(cell);
+    globalItr++;
+  }
+  for (let i = 1; i &lt;= daysInMonth; i++) { // Populate valid days
+    const cell = document.createElement('div');
+    cell.setAttribute('class', 'grid-item-dates');
+    cell.setAttribute('name', 'calendar-day');
+
+    try {
+      if (monthData.dailys.length === 0) { // Account for no dailies case
+        throw Error();
+      }
+
+      let found = false;
+      monthData.dailys.forEach((daily) => {
+        if (daily.day == i) {
+          const link = document.createElement('a');
+          link.setAttribute('href', '/daily.html?date=' +
+            date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + i);
+          link.innerText = i;
+          cell.appendChild(link);
+          cell.setAttribute('data-contains-daily', 'true');
+          found = true;
+        }
+      });
+
+      if (!found) {
+        cell.innerText = i;
+      }
+    } catch (Error) {
+      // If month doesn't exist the monthData will be empty
+      cell.innerText = i;
+    }
+
+    calendar.appendChild(cell);
+    globalItr++;
+  }
+
+  // Put in empty trailing days for month
+  for (let i = 0; i &lt; globalItr%7; i++) {
+    const cell = document.createElement('div');
+    cell.setAttribute('class', 'grid-item-dates');
+    cell.setAttribute('name', 'calendar-day');
+    calendar.appendChild(cell);
+    globalItr++;
+  }
+
+  iframe.src = 'journal.html?date=' +
+    (date.getFullYear() + '-' + (date.getMonth() + 1));
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#appendBullet">appendBullet</a></li><li><a href="global.html#createBullet">createBullet</a></li><li><a href="global.html#editDaily">editDaily</a></li><li><a href="global.html#loadCurrentDay">loadCurrentDay</a></li><li><a href="global.html#newBulletFromInputBox">newBulletFromInputBox</a></li><li><a href="global.html#newBulletFromParentBullet">newBulletFromParentBullet</a></li><li><a href="global.html#nextView">nextView</a></li><li><a href="global.html#previousView">previousView</a></li><li><a href="global.html#submit">submit</a></li><li><a href="global.html#updateCalendar">updateCalendar</a></li><li><a href="global.html#updateFields">updateFields</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.4</a> on Thu Jun 10 2021 19:25:10 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
